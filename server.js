@@ -19,14 +19,14 @@ const sess = {
   cookie: {
     maxAge: 300000,
     httpOnly: true,
-    secure: false,
+    secure: false, // Set to true if using HTTPS in production
     sameSite: 'strict',
   },
   resave: false,
   saveUninitialized: true,
   store: new SequelizeStore({
-    db: sequelize
-  })
+    db: sequelize,
+  }),
 };
 
 app.use(session(sess));
@@ -38,10 +38,23 @@ app.set('view engine', 'handlebars');
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
-app.use("/images", express.static(path.join(__dirname, "/public/images")));
+app.use('/images', express.static(path.join(__dirname, '/public/images')));
 
 app.use(routes);
 
-sequelize.sync({ force: false }).then(() => {
-  app.listen(PORT, () => console.log('Now listening'));
+// Add error handling middleware
+app.use((err, req, res, next) => {
+  console.error('Unhandled error:', err.stack);
+  res.status(500).send('Something went wrong!');
 });
+
+// Sync Sequelize and start the server
+sequelize
+  .sync({ force: false })
+  .then(() => {
+    console.log('Database connected');
+    app.listen(PORT, () => console.log(`Now listening on port ${PORT}`));
+  })
+  .catch((err) => {
+    console.error('Failed to connect to the database:', err);
+  });
